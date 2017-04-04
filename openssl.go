@@ -39,7 +39,7 @@ func (o *OpenSSL) DecryptString(passphrase, encryptedBase64String string) ([]byt
 	}
 	
 	if len(data) < aes.BlockSize {
-		return nil, fmt.Errorf("Data is too short")
+		return nil, fmt.Errorf("Cyphertext must be at least %d bytes decoded", aes.BlockSize)
 	}
 
 	saltHeader := data[:aes.BlockSize]
@@ -57,7 +57,7 @@ func (o *OpenSSL) DecryptString(passphrase, encryptedBase64String string) ([]byt
 
 func (o *OpenSSL) decrypt(key, iv, data []byte) ([]byte, error) {
 	if len(data) == 0 || len(data)%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("bad blocksize(%v), aes.BlockSize = %v\n", len(data), aes.BlockSize)
+		return nil, fmt.Errorf("Data length must be a multiple of aes.BlockSize(%d)", aes.BlockSize)
 	}
 	c, err := aes.NewCipher(key)
 	if err != nil {
@@ -146,7 +146,7 @@ func (o *OpenSSL) md5sum(data []byte) []byte {
 // pkcs7Pad appends padding.
 func (o *OpenSSL) pkcs7Pad(data []byte, blocklen int) ([]byte, error) {
 	if blocklen <= 0 {
-		return nil, fmt.Errorf("invalid blocklen %d", blocklen)
+		return nil, fmt.Errorf("Block length must be greater than 0")
 	}
 	padlen := 1
 	for ((len(data) + padlen) % blocklen) != 0 {
@@ -160,19 +160,19 @@ func (o *OpenSSL) pkcs7Pad(data []byte, blocklen int) ([]byte, error) {
 // pkcs7Unpad returns slice of the original data without padding.
 func (o *OpenSSL) pkcs7Unpad(data []byte, blocklen int) ([]byte, error) {
 	if blocklen <= 0 {
-		return nil, fmt.Errorf("invalid blocklen %d", blocklen)
+		return nil, fmt.Errorf("Block length must be greater than 0")
 	}
 	if len(data)%blocklen != 0 || len(data) == 0 {
-		return nil, fmt.Errorf("invalid data len %d", len(data))
+		return nil, fmt.Errorf("Data length must be a multiple of block length and not 0")
 	}
 	padlen := int(data[len(data)-1])
 	if padlen > blocklen || padlen == 0 {
-		return nil, fmt.Errorf("invalid padding")
+		return nil, fmt.Errorf("Invalid padding")
 	}
 	pad := data[len(data)-padlen:]
 	for i := 0; i < padlen; i++ {
 		if pad[i] != byte(padlen) {
-			return nil, fmt.Errorf("invalid padding")
+			return nil, fmt.Errorf("Invalid padding")
 		}
 	}
 	return data[:len(data)-padlen], nil
