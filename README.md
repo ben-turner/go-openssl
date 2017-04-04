@@ -1,11 +1,13 @@
-# Luzifer / go-openssl
+# go-openssl
+
+> Forked from Luzifer/go-openssl, which appears to be based off [this blog post](http://dequeue.blogspot.ca/2014/11/decrypting-something-encrypted-with.html).
 
 `go-openssl` is a small library wrapping the `crypto/aes` functions in a way the output is compatible to OpenSSL / CryptoJS. For all encryption / decryption processes AES256 is used so this library will not be able to decrypt messages generated with other than `openssl aes-256-cbc`. If you're using CryptoJS to process the data you also need to use AES256 on that side.
 
 ## Installation
 
 ```
-go get github.com/Luzifer/go-openssl
+go get github.com/ben-turner/go-openssl
 ```
 
 ## Usage example
@@ -17,7 +19,7 @@ The usage is quite simple as you don't need any special knowledge about OpenSSL 
 ```go
 import (
   "fmt"
-  "github.com/Luzifer/go-openssl"
+  "github.com/ben-turner/go-openssl"
 )
 
 func main() {
@@ -40,7 +42,7 @@ func main() {
 ```go
 import (
   "fmt"
-  "github.com/Luzifer/go-openssl"
+  "github.com/ben-turner/go-openssl"
 )
 
 func main() {
