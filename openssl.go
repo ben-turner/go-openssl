@@ -1,4 +1,4 @@
-package openssl // import "github.com/Luzifer/go-openssl"
+package openssl
 
 import (
 	"bytes"
@@ -37,14 +37,17 @@ func (o *OpenSSL) DecryptString(passphrase, encryptedBase64String string) ([]byt
 	if err != nil {
 		return nil, err
 	}
+	
 	if len(data) < aes.BlockSize {
 		return nil, fmt.Errorf("Data is too short")
 	}
+
 	saltHeader := data[:aes.BlockSize]
-	if string(saltHeader[:8]) != o.openSSLSaltHeader {
-		return nil, fmt.Errorf("Does not appear to have been encrypted with OpenSSL, salt header missing.")
+	salt := []byte{}
+	if string(saltHeader[:8]) == o.openSSLSaltHeader {
+		salt = saltHeader[8:]
+		data = data[aes.BlockSize:]
 	}
-	salt := saltHeader[8:]
 	creds, err := o.extractOpenSSLCreds([]byte(passphrase), salt)
 	if err != nil {
 		return nil, err
@@ -61,8 +64,8 @@ func (o *OpenSSL) decrypt(key, iv, data []byte) ([]byte, error) {
 		return nil, err
 	}
 	cbc := cipher.NewCBCDecrypter(c, iv)
-	cbc.CryptBlocks(data[aes.BlockSize:], data[aes.BlockSize:])
-	out, err := o.pkcs7Unpad(data[aes.BlockSize:], aes.BlockSize)
+	cbc.CryptBlocks(data, data)
+	out, err := o.pkcs7Unpad(data, aes.BlockSize)
 	if out == nil {
 		return nil, err
 	}
