@@ -32,8 +32,8 @@ func New() *OpenSSL {
 }
 
 // DecryptString decrypts a string that was encrypted using OpenSSL and AES-256-CBC
-func (o *OpenSSL) DecryptString(passphrase, encryptedBase64String string) ([]byte, error) {
-	data, err := base64.StdEncoding.DecodeString(encryptedBase64String)
+func (o *OpenSSL) DecryptString(passphrase, encryptedBase64String string, keystrength int) ([]byte, error) {
+	data, err := base64.URLEncoding.DecodeString(encryptedBase64String)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (o *OpenSSL) DecryptString(passphrase, encryptedBase64String string) ([]byt
 		salt = saltHeader[8:]
 		data = data[aes.BlockSize:]
 	}
-	creds, err := o.extractOpenSSLCreds([]byte(passphrase), salt)
+	creds, err := o.extractOpenSSLCreds2([]byte(passphrase), salt, keystrength)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +127,31 @@ func (o *OpenSSL) extractOpenSSLCreds(password, salt []byte) (openSSLCreds, erro
 		copy(m[i*16:], prev)
 	}
 	return openSSLCreds{key: m[:32], iv: m[32:]}, nil
+}
+
+func (s *OpenSSL) extractOpenSSLCreds2(password, salt []byte, bitstrength int) (openSSLCreds, error) {
+	keyLen := bitstrength / 8
+	ivLen := aes.BlockSize
+
+	byteCount := keyLen+ivLen
+
+	out := make([]byte, byteCount)
+	o := out[:16]
+	var p []byte
+
+	for {
+		preHash := append(p, password...)
+		preHash = append(preHash, salt...)
+		hash := md5.Sum(preHash)
+		copy(o, hash[:])
+		p = o
+
+		if len(o) == cap(o) {
+			break
+		}
+		o = o[16:32]
+	}
+	return openSSLCreds{key: out[:keyLen], iv: out[keyLen:]}, nil
 }
 
 func (o *OpenSSL) hash(prev, password, salt []byte) []byte {
